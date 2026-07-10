@@ -1,0 +1,51 @@
+{% extends "myapp/base.html" %}
+{% block title %}Create a room — Purple Space{% endblock %}
+{% block content %}
+  <div class="mx-auto max-w-lg px-4 py-8 sm:px-6 sm:py-12">
+    <div class="rounded-3xl border border-gray-100 bg-white/90 backdrop-blur shadow-xl p-6 sm:p-8">
+      <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Create a room</h1>
+      <p class="text-sm text-gray-500 mb-6">Give it a name, then invite whoever you want in it.</p>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="mb-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="POST" class="space-y-5">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Room name</label>
+          <input type="text" name="name" placeholder="e.g. Design Team" required
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20" />
+        </div>
+
+        {% if other_users %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Invite people (optional)</label>
+            <div class="max-h-56 overflow-y-auto rounded-xl border border-gray-200 divide-y divide-gray-100">
+              {% for u in other_users %}
+                <label class="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" name="invitees" value="{{ u.id }}" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                  <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+                    {{ u.username|slice:":1"|upper }}
+                  </span>
+                  <span class="text-gray-700">{{ u.username }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <p class="mt-2 text-xs text-gray-400">They'll get a notification and can accept to join.</p>
+          </div>
+        {% endif %}
+
+        <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-3 text-sm font-semibold text-white shadow hover:shadow-md transition">
+          Create room
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-sm text-gray-500">
+        <a href="{% url 'index' %}" class="font-semibold text-brand-600 hover:underline">Back to rooms</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}

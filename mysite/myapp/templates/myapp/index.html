@@ -1,0 +1,3 @@
+{% for chatroom in chatrooms %}
+<a href="{% url 'chatroom' chatroom.slug %}">{{chatroom.name}}</a>
+{% endfor %}

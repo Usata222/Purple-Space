@@ -1,0 +1,56 @@
+{% extends "myapp/base.html" %}
+{% block title %}Notifications — Purple Space{% endblock %}
+{% block content %}
+  <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+    <h1 class="mb-6 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">Notifications</h1>
+
+    {% if notifications %}
+      <div class="space-y-3">
+        {% for n in notifications %}
+          <div class="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+              <span class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full
+                {% if n.invite.status == 'pending' %}bg-brand-600{% elif n.invite.status == 'accepted' %}bg-emerald-500{% else %}bg-gray-300{% endif %}
+                text-white text-sm">
+                {% if n.invite.status == 'accepted' %}✓{% elif n.invite.status == 'declined' %}✕{% else %}✉️{% endif %}
+              </span>
+              <div>
+                <p class="text-sm text-gray-700">{{ n.message }}</p>
+                <p class="mt-1 text-xs text-gray-400">{{ n.created_at|date:"M j, Y — H:i" }}</p>
+              </div>
+            </div>
+
+            {% if n.invite %}
+              {% if n.invite.status == 'pending' %}
+                <div class="flex gap-2 sm:flex-shrink-0">
+                  <form method="POST" action="{% url 'accept_invite' n.invite.id %}">
+                    {% csrf_token %}
+                    <button class="rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-2 text-xs font-semibold text-white shadow hover:shadow-md transition">
+                      Accept
+                    </button>
+                  </form>
+                  <form method="POST" action="{% url 'decline_invite' n.invite.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'notifications' %}" />
+                    <button class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+                      Decline
+                    </button>
+                  </form>
+                </div>
+              {% else %}
+                <span class="text-xs font-medium
+                  {% if n.invite.status == 'accepted' %}text-emerald-600{% else %}text-gray-400{% endif %}">
+                  {{ n.invite.get_status_display }}
+                </span>
+              {% endif %}
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="rounded-2xl border border-dashed border-gray-200 bg-white/60 p-10 text-center">
+        <p class="text-sm text-gray-500">No notifications yet.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

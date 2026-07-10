@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign Up — Purple Space</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4">
+  <div class="w-full max-w-sm rounded-3xl border border-gray-100 bg-white/90 backdrop-blur shadow-xl p-8">
+    <div class="mb-4 flex items-center gap-2">
+      <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-violet-500 text-white shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+          <path d="M4 4h16v11H8l-4 4V4z" fill="currentColor" opacity="0.9" />
+        </svg>
+      </span>
+      <span class="text-sm font-bold text-gray-900">Purple Space</span>
+    </div>
+    <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Create your account</h1>
+    <p class="text-sm text-gray-500 mb-6">Join the conversation.</p>
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <form method="POST" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}
+            <p class="mt-1 text-xs text-gray-400">{{ field.help_text }}</p>
+          {% endif %}
+          {% for error in field.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-3 text-sm font-semibold text-white shadow hover:shadow-md transition">
+        Sign up
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-gray-500">
+      Already have an account?
+      <a href="{% url 'login' %}" class="font-semibold text-violet-600 hover:underline">Log in</a>
+    </p>
+  </div>
+
+  <style>
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.875rem;
+      outline: none;
+    }
+    input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
+  </style>
+</body>
+</html>

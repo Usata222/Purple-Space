@@ -1,0 +1,488 @@
+{% extends "myapp/base.html" %}
+{% block title %}{{ chatroom.name }} — Purple Space{% endblock %}
+{% block content %}
+    <div class="mx-auto max-w-4xl px-3 py-4 sm:px-6 sm:py-8">
+      <!-- Chat Card -->
+      <div class="flex h-[calc(100dvh-6.5rem)] sm:h-[75vh] flex-col rounded-3xl border border-gray-100 bg-white/80 backdrop-blur shadow-glow overflow-hidden">
+        <!-- Room Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-3 text-white sm:px-6 sm:py-4">
+          <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+            <a href="{% url 'index' %}" title="Back to home"
+               class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <div class="min-w-0">
+              <div class="text-xs opacity-80">Room</div>
+              <div class="truncate text-base font-semibold sm:text-lg">{{ chatroom.name }}</div>
+            </div>
+          </div>
+          <span class="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+            Live
+          </span>
+        </div>
+
+        <!-- Online users strip -->
+        <div id="online-strip" class="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-2 text-xs text-gray-500 sm:px-6"></div>
+
+        <!-- Scrollable Messages -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 space-y-3"></div>
+
+        <!-- Typing indicator -->
+        <div id="typing-indicator" class="hidden px-4 pb-1 text-xs italic text-gray-400 sm:px-6"></div>
+
+        <!-- Reply preview banner -->
+        <div id="reply-banner" class="hidden mx-3 mb-2 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-700 sm:mx-6 sm:px-4">
+          <div class="min-w-0 truncate">
+            Replying to <span id="reply-banner-username" class="font-semibold"></span>:
+            <span id="reply-banner-snippet" class="opacity-80"></span>
+          </div>
+          <button id="reply-cancel" class="ml-3 flex-shrink-0 text-brand-500 hover:text-brand-700">✕</button>
+        </div>
+
+        <!-- Emoji picker -->
+        <div id="emoji-picker" class="hidden mx-3 mb-2 flex flex-wrap gap-1 rounded-xl border border-gray-200 bg-white p-3 shadow sm:mx-6"></div>
+
+        <!-- Fixed Bottom Input -->
+        <form id="chat-form" class="border-t border-gray-100 p-3 sm:p-4 bg-white/90">
+          {% csrf_token %}
+          <div class="flex items-end gap-1.5 sm:gap-2">
+            <button type="button" id="attach-btn" title="Attach file"
+              class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-lg hover:bg-gray-50">📎</button>
+            <input type="file" id="file-input" class="hidden" />
+
+            <button type="button" id="emoji-btn" title="Emoji"
+              class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-lg hover:bg-gray-50">🙂</button>
+
+            <div class="relative min-w-0 flex-1">
+              <input
+                id="message-input"
+                type="text"
+                placeholder="Message…"
+                autocomplete="off"
+                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 pr-14 sm:pr-16 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              />
+              <button
+                id="send-button"
+                type="submit"
+                class="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 px-2.5 sm:px-3 py-2 text-xs font-semibold text-white shadow hover:shadow-md active:scale-[.98] transition"
+              >
+                <span class="hidden sm:inline">Send</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="h-4 w-4">
+                  <path d="M4 12h16m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast container for cross-room notifications -->
+    <div id="toast-container" class="fixed inset-x-3 bottom-3 z-50 flex flex-col gap-2 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-80"></div>
+
+    {{ chatroom.slug|json_script:"json-chatroomname" }}
+    {{ request.user.username|json_script:"json-username" }}
+    {{ messages_json|json_script:"json-initial-messages" }}
+
+    <script>
+      const chatRoomName = JSON.parse(document.getElementById("json-chatroomname").textContent);
+      const username = JSON.parse(document.getElementById("json-username").textContent);
+      const initialMessages = JSON.parse(document.getElementById("json-initial-messages").textContent);
+
+      const messagesEl = document.getElementById("chat-messages");
+      const form = document.getElementById("chat-form");
+      const input = document.getElementById("message-input");
+      const sendBtn = document.getElementById("send-button");
+      const onlineStrip = document.getElementById("online-strip");
+      const typingIndicator = document.getElementById("typing-indicator");
+      const replyBanner = document.getElementById("reply-banner");
+      const replyBannerUsername = document.getElementById("reply-banner-username");
+      const replyBannerSnippet = document.getElementById("reply-banner-snippet");
+      const replyCancel = document.getElementById("reply-cancel");
+      const emojiBtn = document.getElementById("emoji-btn");
+      const emojiPicker = document.getElementById("emoji-picker");
+      const attachBtn = document.getElementById("attach-btn");
+      const fileInput = document.getElementById("file-input");
+      const toastContainer = document.getElementById("toast-container");
+
+      let replyingTo = null;
+      let typingTimeout = null;
+      const typingUsers = new Set();
+
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function csrfToken() {
+        return document.querySelector("[name=csrfmiddlewaretoken]").value;
+      }
+
+      function reactionsHtml(messageId, reactions) {
+        reactions = reactions || {};
+        const entries = Object.entries(reactions).filter(([, users]) => users.length > 0);
+        if (entries.length === 0) return "";
+        return (
+          '<div class="mt-1 flex flex-wrap gap-1" data-reactions-for="' + messageId + '">' +
+          entries
+            .map(([emoji, users]) => {
+              const mine = users.includes(username);
+              return (
+                '<button class="react-pill rounded-full border px-2 py-0.5 text-xs ' +
+                (mine ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-white") +
+                '" data-message-id="' + messageId + '" data-emoji="' + emoji + '">' +
+                emoji + " " + users.length +
+                "</button>"
+              );
+            })
+            .join("") +
+          "</div>"
+        );
+      }
+
+      function renderMessage(m, prepend) {
+        if (document.getElementById("msg-" + m.id)) return;
+
+        const isMe = m.username === username;
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex flex-col " + (isMe ? "items-end" : "items-start");
+        wrapper.id = "msg-" + m.id;
+        wrapper.dataset.username = m.username;
+        wrapper.dataset.deleted = m.is_deleted ? "1" : "0";
+
+        let bodyHtml;
+        if (m.is_deleted) {
+          bodyHtml = '<div class="whitespace-pre-line italic opacity-60">Message deleted</div>';
+        } else if (m.file_url) {
+          const isImage = /\.(png|jpe?g|gif|webp)$/i.test(m.file_name || "");
+          if (isImage) {
+            bodyHtml =
+              '<a href="' + m.file_url + '" target="_blank"><img src="' + m.file_url +
+              '" class="max-h-56 max-w-full rounded-xl" /></a>';
+          } else {
+            bodyHtml =
+              '<a href="' + m.file_url + '" target="_blank" class="underline break-all">📎 ' +
+              escapeHtml(m.file_name || "file") + "</a>";
+          }
+          if (m.message) {
+            bodyHtml += '<div class="mt-1 whitespace-pre-line">' + escapeHtml(m.message) + "</div>";
+          }
+        } else {
+          bodyHtml = '<div class="whitespace-pre-line break-words">' + escapeHtml(m.message) + "</div>";
+        }
+
+        const replyHtml = m.reply_to
+          ? '<div class="mb-1 rounded-lg border-l-2 border-white/40 bg-black/5 px-2 py-1 text-[11px] opacity-80">' +
+            "↩ " + escapeHtml(m.reply_to.username) + ": " + escapeHtml(m.reply_to.snippet) +
+            "</div>"
+          : "";
+
+        const editedTag = m.is_edited ? ' <span class="opacity-50">(edited)</span>' : "";
+
+        const actionsHtml = m.is_deleted
+          ? ""
+          : '<div class="msg-actions mt-1 hidden gap-2 text-[11px] opacity-70 group-hover:flex">' +
+            '<button class="action-reply hover:underline" data-message-id="' + m.id + '">Reply</button>' +
+            '<button class="action-react hover:underline" data-message-id="' + m.id + '">React</button>' +
+            (isMe
+              ? '<button class="action-edit hover:underline" data-message-id="' + m.id + '">Edit</button>' +
+                '<button class="action-delete hover:underline" data-message-id="' + m.id + '">Delete</button>'
+              : "") +
+            "</div>";
+
+        wrapper.innerHTML =
+          '<div class="group max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm shadow-sm ' +
+          (isMe ? "bg-brand-600 text-white rounded-br-sm" : "bg-gray-100 text-gray-800 rounded-bl-sm") +
+          '">' +
+          '<div class="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-wide opacity-70">' +
+          "<span>" + escapeHtml(m.username) + "</span>" +
+          '<span class="normal-case opacity-70">' + (m.timestamp || "") + editedTag + "</span>" +
+          "</div>" +
+          replyHtml +
+          '<div class="msg-body" data-message-id="' + m.id + '">' + bodyHtml + "</div>" +
+          actionsHtml +
+          "</div>" +
+          reactionsHtml(m.id, m.reactions);
+
+        if (prepend) {
+          messagesEl.prepend(wrapper);
+        } else {
+          messagesEl.appendChild(wrapper);
+        }
+      }
+
+      initialMessages.forEach((m) => renderMessage(m, false));
+      scrollToBottom();
+
+      const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+      const chatSocket = new WebSocket(wsProtocol + window.location.host + "/ws/" + chatRoomName + "/");
+
+      chatSocket.onclose = function () {
+        showToast("Connection lost — refresh to reconnect.", "system");
+      };
+
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data || "{}");
+        switch (data.type) {
+          case "chat_message":
+            renderMessage(data, false);
+            scrollToBottom();
+            typingUsers.delete(data.username);
+            renderTyping();
+            break;
+          case "typing_status":
+            if (data.is_typing) typingUsers.add(data.username);
+            else typingUsers.delete(data.username);
+            renderTyping();
+            break;
+          case "presence_update":
+            renderPresence(data.online_users);
+            break;
+          case "message_edited": {
+            const body = document.querySelector('.msg-body[data-message-id="' + data.id + '"]');
+            if (body) {
+              body.innerHTML = '<div class="whitespace-pre-line break-words">' + escapeHtml(data.message) + "</div>";
+              const meta = body.parentElement.querySelector(".mb-1.flex");
+              if (meta && !meta.innerHTML.includes("(edited)")) {
+                meta.innerHTML += ' <span class="opacity-50">(edited)</span>';
+              }
+            }
+            break;
+          }
+          case "message_deleted": {
+            const wrapper = document.getElementById("msg-" + data.id);
+            if (wrapper) {
+              wrapper.dataset.deleted = "1";
+              const bubble = wrapper.querySelector(".group");
+              bubble.querySelector(".msg-body").innerHTML =
+                '<div class="whitespace-pre-line italic opacity-60">Message deleted</div>';
+              const actions = bubble.querySelector(".msg-actions");
+              if (actions) actions.remove();
+              const reactions = wrapper.querySelector('[data-reactions-for="' + data.id + '"]');
+              if (reactions) reactions.remove();
+            }
+            break;
+          }
+          case "reaction_update": {
+            const wrapper = document.getElementById("msg-" + data.message_id);
+            if (wrapper) {
+              const existing = wrapper.querySelector('[data-reactions-for="' + data.message_id + '"]');
+              if (existing) existing.remove();
+              wrapper.insertAdjacentHTML("beforeend", reactionsHtml(data.message_id, data.reactions));
+            }
+            break;
+          }
+          case "notify_message":
+            showToast(data.username + " in " + data.room_name, data.message, data.room_slug);
+            break;
+        }
+      };
+
+      function renderPresence(users) {
+        onlineStrip.innerHTML = users
+          .map(
+            (u) =>
+              '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">' +
+              '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>' + escapeHtml(u) + "</span>"
+          )
+          .join("");
+      }
+
+      function renderTyping() {
+        const others = [...typingUsers].filter((u) => u !== username);
+        if (others.length === 0) {
+          typingIndicator.classList.add("hidden");
+          typingIndicator.textContent = "";
+        } else {
+          typingIndicator.classList.remove("hidden");
+          typingIndicator.textContent =
+            (others.length === 1 ? others[0] + " is typing…" : others.join(", ") + " are typing…");
+        }
+      }
+
+      // Better-designed toast: title + preview, avatar-style initial, click to jump to that room.
+      function showToast(title, preview, roomSlug) {
+        const toast = document.createElement("div");
+        toast.className =
+          "flex cursor-pointer items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg animate-[fadeIn_.2s_ease-out]";
+
+        const initial = (title || "?").trim().charAt(0).toUpperCase();
+        toast.innerHTML =
+          '<span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-brand-500 text-sm font-semibold text-white">' +
+          escapeHtml(initial) + "</span>" +
+          '<div class="min-w-0 flex-1">' +
+          '<div class="truncate text-xs font-semibold text-gray-900">' + escapeHtml(title) + "</div>" +
+          '<div class="truncate text-xs text-gray-500">' + escapeHtml(preview) + "</div>" +
+          "</div>" +
+          '<button class="toast-close flex-shrink-0 text-gray-300 hover:text-gray-500">✕</button>';
+
+        toast.querySelector(".toast-close").addEventListener("click", (e) => {
+          e.stopPropagation();
+          toast.remove();
+        });
+        if (roomSlug && roomSlug !== "system") {
+          toast.addEventListener("click", () => (window.location.href = "/" + roomSlug + "/"));
+        }
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 6000);
+      }
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const message = (input.value || "").trim();
+        if (!message) return;
+
+        chatSocket.send(
+          JSON.stringify({
+            type: "message",
+            message: message,
+            reply_to: replyingTo ? replyingTo.id : null,
+          })
+        );
+        input.value = "";
+        clearReply();
+        chatSocket.send(JSON.stringify({ type: "typing", is_typing: false }));
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+
+      input.addEventListener("input", () => {
+        chatSocket.send(JSON.stringify({ type: "typing", is_typing: true }));
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          chatSocket.send(JSON.stringify({ type: "typing", is_typing: false }));
+        }, 1500);
+      });
+
+      messagesEl.addEventListener("click", (e) => {
+        const replyBtn = e.target.closest(".action-reply");
+        const editBtn = e.target.closest(".action-edit");
+        const deleteBtn = e.target.closest(".action-delete");
+        const reactBtn = e.target.closest(".action-react");
+        const reactPill = e.target.closest(".react-pill");
+
+        if (replyBtn) {
+          const id = replyBtn.dataset.messageId;
+          const wrapper = document.getElementById("msg-" + id);
+          const snippetEl = wrapper.querySelector(".msg-body");
+          replyingTo = {
+            id: id,
+            username: wrapper.dataset.username,
+            snippet: (snippetEl.textContent || "").slice(0, 80),
+          };
+          replyBannerUsername.textContent = replyingTo.username;
+          replyBannerSnippet.textContent = replyingTo.snippet;
+          replyBanner.classList.remove("hidden");
+          input.focus();
+        }
+
+        if (editBtn) {
+          const id = editBtn.dataset.messageId;
+          const body = document.querySelector('.msg-body[data-message-id="' + id + '"]');
+          const currentText = body.textContent.trim();
+          const newText = prompt("Edit message:", currentText);
+          if (newText !== null && newText.trim() && newText.trim() !== currentText) {
+            chatSocket.send(JSON.stringify({ type: "edit", message_id: id, message: newText.trim() }));
+          }
+        }
+
+        if (deleteBtn) {
+          const id = deleteBtn.dataset.messageId;
+          if (confirm("Delete this message?")) {
+            chatSocket.send(JSON.stringify({ type: "delete", message_id: id }));
+          }
+        }
+
+        if (reactBtn) {
+          const id = reactBtn.dataset.messageId;
+          openEmojiPicker((emoji) => {
+            chatSocket.send(JSON.stringify({ type: "react", message_id: id, emoji: emoji }));
+          });
+        }
+
+        if (reactPill) {
+          chatSocket.send(
+            JSON.stringify({
+              type: "react",
+              message_id: reactPill.dataset.messageId,
+              emoji: reactPill.dataset.emoji,
+            })
+          );
+        }
+      });
+
+      replyCancel.addEventListener("click", clearReply);
+      function clearReply() {
+        replyingTo = null;
+        replyBanner.classList.add("hidden");
+      }
+
+      const EMOJIS = ["😀","😂","😍","👍","🙏","🎉","😢","😮","🔥","❤️","👏","🤔","😅","🙌","😎","💯"];
+
+      function buildEmojiPicker(onPick) {
+        emojiPicker.innerHTML = "";
+        EMOJIS.forEach((emoji) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = emoji;
+          btn.className = "rounded-lg px-2 py-1 text-lg hover:bg-gray-100";
+          btn.addEventListener("click", () => {
+            onPick(emoji);
+            emojiPicker.classList.add("hidden");
+          });
+          emojiPicker.appendChild(btn);
+        });
+      }
+
+      function openEmojiPicker(onPick) {
+        buildEmojiPicker(onPick);
+        emojiPicker.classList.remove("hidden");
+      }
+
+      emojiBtn.addEventListener("click", () => {
+        if (!emojiPicker.classList.contains("hidden")) {
+          emojiPicker.classList.add("hidden");
+          return;
+        }
+        openEmojiPicker((emoji) => {
+          input.value += emoji;
+          input.focus();
+        });
+      });
+
+      attachBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        try {
+          const res = await fetch(window.location.pathname + "upload/", {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken() },
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showToast("Upload failed", data.error || "Please try again.", "system");
+          }
+        } catch (err) {
+          showToast("Upload failed", "Please try again.", "system");
+        }
+        fileInput.value = "";
+      });
+    </script>
+{% endblock %}

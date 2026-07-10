@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{% block title %}Purple Space{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+            colors: { brand: { 500: "#7c3aed", 600: "#6d28d9", 700: "#5b21b6" } },
+            boxShadow: { glow: "0 10px 30px rgba(124,58,237,.25)" },
+          },
+        },
+      };
+    </script>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="min-h-[100dvh] w-full overflow-x-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <nav class="sticky top-0 z-40 border-b border-gray-100 bg-white/80 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <a href="{% url 'index' %}" class="flex items-center gap-2">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-500 text-white shadow">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+              <path d="M4 4h16v11H8l-4 4V4z" fill="currentColor" opacity="0.9" />
+            </svg>
+          </span>
+          <span class="text-lg font-extrabold tracking-tight text-gray-900">Purple Space</span>
+        </a>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'notifications' %}" class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50" title="Notifications">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="h-5 w-5 text-gray-700">
+                <path d="M12 3a5 5 0 00-5 5v3.5L5 15h14l-2-3.5V8a5 5 0 00-5-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M9.5 18a2.5 2.5 0 005 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              {% if unread_count %}
+                <span class="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {{ unread_count }}
+                </span>
+              {% endif %}
+            </a>
+            <span class="hidden text-sm text-gray-500 sm:inline">{{ request.user.username }}</span>
+            <form method="POST" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+                Log out
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+  </body>
+</html>
