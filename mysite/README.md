@@ -1,184 +1,124 @@
-# Digital Marketplace
+# [Project Name]
 
-A full-stack digital product marketplace built with Django — where creators can upload and sell digital products (courses, eBooks, files) and buyers can purchase, download, and rate them.
-
----
-
-## Demo / Screenshots
-
-> 📸 Add your screenshots or GIF demo here
-
-<!-- Replace the lines below with your actual image paths or URLs -->
-
-**Homepage / Product Listings**
-![Homepage Screenshot](screenshots/homepage.png)
-
-**Product Detail Page**
-![Product Detail Screenshot](screenshots/detail.png)
-
-**Seller Dashboard**
-![Dashboard Screenshot](screenshots/dashboard.png)
-
-**Sales Analytics**
-![Sales Screenshot](screenshots/sales.png)
-
-> 💡 Tip: Create a `screenshots/` folder in your repo root, add your images there, and the links above will work automatically.
+<!-- One-line description: what does this app do, in a single sentence. -->
+> A full-stack e-commerce platform where users can browse products, manage a shopping cart, and check out securely.
 
 ---
 
-## Features
+## 📸 Demo / Screenshots
 
-- **User Authentication** — Register, login, and logout with Django's built-in auth system
-- **Dual Mode** — Switch between Buyer Mode and Creator Mode within the same account
-- **Product Management** — Creators can create, edit, and delete digital product listings with thumbnails
-- **Product Search** — Search products by name or description from the homepage
-- **Stripe Payments** — Secure checkout via Stripe with order tracking and payment confirmation
-- **Purchase-Gated Downloads** — Only buyers with a verified paid order can download a product file
-- **Seller Dashboard** — Creators see all their products with units sold and total earnings
-- **Sales Analytics** — Revenue breakdown by day, week, month, and year with Chart.js visualizations
-- **Star Ratings** — Verified buyers can rate products (1–5 stars); one rating per buyer per product
-- **Cloudinary Media Storage** — Product thumbnails and files stored persistently on Cloudinary
-- **Responsive Design** — Mobile-friendly UI built with Tailwind CSS
+<!-- Add a live demo link here if you've deployed it, e.g. Render/Vercel/Railway -->
+**Live demo:** [link-to-your-deployed-app](#)
+
+<!-- Add screenshots below. Easiest way: drag images into your GitHub repo's
+     README editor, or upload them to an `assets/` or `screenshots/` folder
+     in your repo and reference them like this: -->
+![Homepage](screenshots/homepage.png)
+![Product page](screenshots/product-page.png)
+![Cart](screenshots/cart.png)
 
 ---
 
-## Technologies Used
+## ✨ Features
 
-| Layer | Technology |
-|---|---|
-| Backend | Python 3, Django |
-| Database | SQLite (development) |
-| Payments | Stripe Checkout API |
-| Media Storage | Cloudinary |
-| Frontend | Django Templates, Tailwind CSS, Chart.js |
-| Deployment | Render (Gunicorn + WhiteNoise) |
-| Auth | Django built-in authentication |
+- **User registration & authentication** — sign up, log in, log out
+- **User profiles** — view and edit account details
+- **Product listing & management** — browse available products
+- **Product search** — find products by name/category
+- **Shopping cart** — add, update, and remove items before checkout
+- **Payment integration** — [name your payment provider, e.g. Stripe/Paystack] for secure checkout
+
+<!-- Add/remove bullets to match what's actually in the project. -->
 
 ---
 
-## Installation & Setup
+## 🛠 Technologies Used
 
-### Prerequisites
-- Python 3.10+
-- pip
-- Git
+<!-- Confirm/edit this list based on what you actually used. -->
+- **Backend:** Python, Django
+- **Database:** PostgreSQL
+- **Frontend:** HTML, Tailwind CSS
+- **Other:** [any other libraries — e.g. Django REST Framework, Cloudinary, Stripe SDK]
 
-### Steps
+---
 
-**1. Clone the repository**
+## ⚙️ Installation & Setup
+
+Clone the repository:
 ```bash
-git clone https://github.com/your-username/digital-marketplace.git
-cd digital-marketplace
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
 ```
 
-**2. Create and activate a virtual environment**
+Create and activate a virtual environment:
 ```bash
 python -m venv venv
-
-# On Mac/Linux
-source venv/bin/activate
-
-# On Windows
-venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 ```
 
-**3. Install dependencies**
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-**4. Create your `.env` file**
-
-Copy the example below into a new file called `.env` in the project root and fill in your values (see [Environment Variables](#environment-variables) section):
-```bash
-cp .env.example .env
-```
-
-**5. Run database migrations**
+Set up your environment variables (see below), then run migrations:
 ```bash
 python manage.py migrate
 ```
 
-**6. Create a superuser (optional — for admin panel access)**
+Create a superuser (optional, for admin access):
 ```bash
 python manage.py createsuperuser
 ```
 
-**7. Start the development server**
+Run the development server:
 ```bash
 python manage.py runserver
 ```
 
-Visit `http://127.0.0.1:8000` in your browser.
+The app should now be running at `http://127.0.0.1:8000/`.
 
 ---
 
-## Environment Variables
+## 🔑 Environment Variables
 
-This project uses a `.env` file for sensitive credentials. **Never commit this file to GitHub.**
+This project uses a `.env` file for secrets (not committed to GitHub — see `.gitignore`).
+Create a `.env` file in the project root with the following keys:
 
-Create a `.env` file in the project root with the following variables:
-
-```env
+```
 # Django
-SECRET_KEY=your-django-secret-key
-DEBUG=True
+DJANGO_SECRET_KEY=your-secret-key-here
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
 
-# Stripe
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+# Database
+DATABASE_URL=postgres://user:password@localhost:5432/your_db_name
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+# Payment provider
+PAYMENT_PUBLIC_KEY=your-public-key-here
+PAYMENT_SECRET_KEY=your-secret-key-here
 ```
 
-### Where to get each value
-
-| Variable | Where to get it |
-|---|---|
-| `SECRET_KEY` | Generate one at [djecrety.ir](https://djecrety.ir) or run `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
-| `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` | [Stripe Dashboard](https://dashboard.stripe.com) → Developers → API Keys |
-| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | [Cloudinary Dashboard](https://cloudinary.com) → Home (shown on first screen after login) |
-
-> ⚠️ For production (e.g. Render), set `DEBUG=False` and add these same variables in your hosting platform's environment settings.
+<!-- Add/remove keys to match what your settings.py actually reads from
+     os.environ — e.g. Cloudinary credentials, email backend settings, etc. -->
 
 ---
 
-## How to Use
+## 🚀 Usage
 
-### As a Buyer
-1. **Register** an account at `/register/`
-2. **Browse products** on the homepage — use the search bar to filter by name or description
-3. **Click a product** to view its detail page
-4. **Purchase** using your card via Stripe Checkout (use Stripe test card `4242 4242 4242 4242` in development)
-5. After payment, go to **My Purchases** to download your file and leave a star rating
+1. **Create an account** — go to the signup page and register with your email and password.
+2. **Log in** — use your credentials to access your account.
+3. **Browse products** — view the product listings on the homepage, or use the search bar to find something specific.
+4. **Add to cart** — select a product and add it to your cart.
+5. **Checkout** — review your cart and complete payment via [payment provider].
+6. **Manage your profile** — update your account details from the profile page.
 
-### As a Creator (Seller)
-1. Log in and click **Switch to Creator** in the navigation bar
-2. Go to **Dashboard** to see all your listed products
-3. Click **Create Product** to upload a new digital product (name, description, price, file, thumbnail)
-4. Click **Edit** on any product to update it, or **Delete** to remove it
-5. Go to **Sales** to see your revenue breakdown across different time periods
-
-### Admin Panel
-- Visit `/admin/` and log in with your superuser credentials to manage all users, products, and orders directly
+<!-- If there's an admin/seller side (e.g. managing product listings), add
+     a short section here explaining how that works too. -->
 
 ---
 
-## Deployment
+## 📄 License
 
-This project is deployed on **Render**. Key production setup:
-
-- `DEBUG=False` in environment variables
-- Gunicorn as the WSGI server (`gunicorn mysite.wsgi`)
-- WhiteNoise for static file serving
-- Cloudinary for all media file storage (required since Render's filesystem is ephemeral)
-- All `.env` variables added manually in Render's Environment tab
-
----
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
+<!-- e.g. MIT, or remove this section if you haven't decided on one -->
+This project is licensed under the MIT License.
